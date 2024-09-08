@@ -1,0 +1,194 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+
+<style>
+    .btn:focus,
+    .btn:active {
+        outline: none !important;
+        box-shadow: none !important; /* Optional: Removes box-shadow */
+    }
+
+    #hiddenSection {
+        z-index: 1000;
+    }
+</style>
+
+<div id="clientSideContainer" class="mb-5 shadow pb-3 bg-white">
+    <div class="bg-primary pb-1 pt-2 border border-dark border-2">
+        <div class="row">
+            <div class="col-4">
+                <button class="btn btn-lg border border-2 border-dark mb-1 ms-2" style="background-color:transparent"
+                        type="button" id="menuButton" data-bs-toggle="collapse" data-bs-target="#hiddenSection" aria-expanded="false" aria-controls="hiddenSection">
+                    <i class="fa-solid fa-bars" id="menuIcon"></i>
+                </button>
+            </div>
+            <div class="col-4">
+                <h2 class="text-center mt-1">Client Side</h2>
+            </div>
+            <div class="col-4 text-end">
+                <button class="btn btn-lg" style="background-color:transparent"
+                        type="button" id="clientSideToggleButton" data-bs-toggle="collapse" data-bs-target="#clientSideDropDownSection"
+                        onclick="toggleChevron('clientSideSevron')">
+                    <i class="fas fa-chevron-up" id="clientSideSevron"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+    <div id="hiddenSection" class="row collapse position-absolute bg-white p-3 border border-2 border-dark shadow" style="margin-right:5px;">
+        <div class="col-12">
+            <form>
+                <h2>Request Options</h2>
+                <label class="form-label">Compression Algorithm</label>
+                <select class="form-select">
+                    <option selected>Huffman Algorithm</option>
+                    <option>LempelZiv78 Algorithm</option>
+                </select>
+
+                <label class="form-label">ErrorCorrecting Algorithm</label>
+                <select class="form-select">
+                    <option selected>Hamming 7,4</option>
+                    <option>CRC</option>
+                </select>
+
+                <button class="btn btn-primary text-center">Send Request</button>
+            </form>
+        </div>
+    </div>
+    <div class="collapse show mt-4" id="clientSideDropDownSection">
+        <div class="row px-3">
+            <div class="col-4">
+                <div class="row">
+                    <label class="form-label h5">1. Ascii Representation</label>
+                    <div class="col-9">
+                        <textarea class="form-control" rows="5">Yolo</textarea>
+                    </div>
+                    <div class="col-3">
+                        <img src="/Images/arrow.png" class="mt-3" style="height:80px;width:80px;" />
+                    </div>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="row">
+                    <label class="form-label h5">2. Binary Representation</label>
+                    <div class="col-9">
+                        <textarea class="form-control" rows="5" readonly>Yolo</textarea>
+                    </div>
+                    <div class="col-3">
+                        <img src="/Images/arrow.png" class="mt-3" style="height:80px;width:80px;" />
+                    </div>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="row">
+                    <label class="form-label h5">3. Compressed Binary Representation</label>
+                    <div class="col-9">
+                        <textarea class="form-control" rows="5" readonly>Yolo</textarea>
+                    </div>
+                    <div class="col-3">
+                        <img src="/Images/arrow.png" class="mt-3" style="height:80px;width:80px;" />
+                    </div>
+                </div>
+            </div>
+            <div class="col-4 mt-4">
+                <div class="row">
+                    <label class="form-label h5">4. Binary Representation & Error Correction</label>
+                    <div class="col-9">
+                        <textarea class="form-control" rows="5" readonly>Yolo</textarea>
+                    </div>
+                    <div class="col-3">
+                        <img src="/Images/arrow.png" class="mt-3" style="height:80px;width:80px;" />
+                    </div>
+                </div>
+            </div>
+            <div class="col-4 mt-4 mb-2">
+                <div class="row">
+                    <div class="col-9">
+                        <label class="form-label h5">5. Base64 Representation</label>
+                        <textarea class="form-control" rows="5" readonly>Yolo</textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="serverSideContainer" class="shadow pb-3 bg-white">
+    <div class="bg-primary mb-4 pb-1 pt-2 border border-dark border-2">
+        <h2 class="text-center">Server Side</h2>
+    </div>
+    <div class="row px-3">
+        <div class="col-4">
+            <div class="row">
+                <label class="form-label h5">1. Base64 Representation</label>
+                <div class="col-9">
+                    <textarea class="form-control" rows="5" readonly>Yolo</textarea>
+                </div>
+                <div class="col-3">
+                    <img src="/Images/arrow.png" class="mt-3" style="height:80px;width:80px;"/>
+                </div>
+            </div>
+        </div>
+        <div class="col-4">
+            <div class="row">
+                <label class="form-label h5">2. Binary Representation & Error Correction</label>
+                <div class="col-9">
+                    <textarea class="form-control" rows="5" readonly>Yolo</textarea>
+                </div>
+                <div class="col-3">
+                    <img src="/Images/arrow.png" class="mt-3" style="height:80px;width:80px;" />
+                </div>
+            </div>
+        </div>
+        <div class="col-4">
+            <div class="row">
+                <label class="form-label h5">3. Compressed Binary Representation</label>
+                <div class="col-9">
+                    <textarea class="form-control" rows="5" readonly>Yolo</textarea>
+                </div>
+                <div class="col-3">
+                    <img src="/Images/arrow.png" class="mt-3" style="height:80px;width:80px;" />
+                </div>
+            </div>
+        </div>
+        <div class="col-4 mt-4">
+            <div class="row">
+                <label class="form-label h5">4. Binary Representation</label>
+                <div class="col-9">
+                    <textarea class="form-control" rows="5" readonly>Yolo</textarea>
+                </div>
+                <div class="col-3">
+                    <img src="/Images/arrow.png" class="mt-3" style="height:80px;width:80px;" />
+                </div>
+            </div>
+        </div>
+        <div class="col-4 mt-4 mb-2">
+            <div class="row">
+                <div class="col-9">
+                    <label class="form-label h5">5. Ascii Representation</label>
+                    <textarea class="form-control" rows="5" readonly>Yolo</textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts{
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        function toggleChevron(sevronId) {
+            var icon = document.getElementById(sevronId);
+
+            if (icon.classList.contains('fa-chevron-down')) {
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-chevron-up');
+            } else {
+                icon.classList.remove('fa-chevron-up');
+                icon.classList.add('fa-chevron-down');
+            }
+        }
+    </script>
+}

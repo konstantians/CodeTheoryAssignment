@@ -1,0 +1,45 @@
+
+using CodeTheoryAssignment.Library;
+
+namespace CodeTheoryAssignment.API
+{
+    public class Program
+    {
+        public static void Main(string[] args)
+        {
+            var builder = WebApplication.CreateBuilder(args);
+
+            // Add services to the container.
+            builder.Services.AddControllersWithViews();
+            builder.Services.AddSingleton<IEncodingAlgorithmsService, EncodingAlgorithmsService>();
+            builder.Services.AddSingleton<ICompressionAlgorithmsService, CompressionAlgorithmsService>();
+            builder.Services.AddSingleton<IErrorCorrectingAlgorithmsService, ErrorCorrectingAlgorithmsService>();
+            builder.Services.AddSingleton<IErrorInsertionService, ErrorInsertionService>();
+            builder.Services.AddSingleton<IStatisticsService, StatisticsService>();
+
+
+            builder.Services.AddControllers();
+            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+            builder.Services.AddEndpointsApiExplorer();
+            builder.Services.AddSwaggerGen();
+
+            var app = builder.Build();
+
+            // Configure the HTTP request pipeline.
+            if (app.Environment.IsDevelopment())
+            {
+                app.UseSwagger();
+                app.UseSwaggerUI();
+            }
+
+            app.UseHttpsRedirection();
+
+            app.UseAuthorization();
+
+
+            app.MapControllers();
+
+            app.Run();
+        }
+    }
+}
