@@ -6,7 +6,7 @@
     .btn:focus,
     .btn:active {
         outline: none !important;
-        box-shadow: none !important; /* Optional: Removes box-shadow */
+        box-shadow: none !important; 
     }
 
     #hiddenSection {
@@ -37,21 +37,26 @@
     </div>
     <div id="hiddenSection" class="row collapse position-absolute bg-white p-3 border border-2 border-dark shadow" style="margin-right:5px;">
         <div class="col-12">
-            <form>
+            <form asp-controller="Home" asp-action="Index">
                 <h2>Request Options</h2>
-                <label class="form-label">Compression Algorithm</label>
-                <select class="form-select">
-                    <option selected>Huffman Algorithm</option>
-                    <option>LempelZiv78 Algorithm</option>
+                <label class="form-label h6 mt-2" for="compressionAlgorithmSelect">Compression Algorithm</label>
+                <select name="CompressionAlgorithm" id="compressionAlgorithmSelect" class="form-select">
+                    <option value="ShannonFano" selected>Shannon Fano Algorithm</option>
+                    <option value="Huffman">Huffman Algorithm</option>
+                    <option value="LempelZiv78">LempelZiv78 Algorithm</option>
                 </select>
 
-                <label class="form-label">ErrorCorrecting Algorithm</label>
-                <select class="form-select">
-                    <option selected>Hamming 7,4</option>
-                    <option>CRC</option>
+                <label class="form-label h6 mt-3" for="errorCorrectingAlgorithmSelect">ErrorCorrecting Algorithm</label>
+                <select name="ErrorCorrectingAlgorithm" id="errorCorrectingAlgorithmSelect" class="form-select">
+                    <option value="Hamming74" selected>Hamming 7,4</option>
+                    <option value="CRC">CRC</option>
                 </select>
 
-                <button class="btn btn-primary text-center">Send Request</button>
+                <label class="form-label h6 mt-3" for="bitErrorChanceInput">Bit Error Chance(optional)</label>
+                <input name="BitErrorChance" type="number" id="bitErrorChanceInput" class="form-control" min="0" max="20"/> 
+
+                <input name="UserInput" value="" id="userInput" hidden>
+                <button class="btn btn-primary text-center mt-3" onclick="updateHiddenInput()">Send Request</button>
             </form>
         </div>
     </div>
@@ -59,54 +64,117 @@
         <div class="row px-3">
             <div class="col-4">
                 <div class="row">
-                    <label class="form-label h5">1. Ascii Representation</label>
+                    @{
+                        string asciiRepresentation = ((string)ViewData["ClientSideAsciiRepresentation"]!);
+                        int initialBitLength = asciiRepresentation.Length != 0 ? asciiRepresentation.Length * 8 + 8 : 0; //accounts for null character
+                    }
+                    <label class="form-label h5" for="userInputTextArea">1. Ascii Representation</label>
+                    <label class="form-label h6">Bit Count = @initialBitLength</label>
                     <div class="col-9">
-                        <textarea class="form-control" rows="5">Yolo</textarea>
+                        <textarea id="userInputTextArea" class="form-control" rows="5">@ViewData["ClientSideAsciiRepresentation"]</textarea>
                     </div>
                     <div class="col-3">
-                        <img src="/Images/arrow.png" class="mt-3" style="height:80px;width:80px;" />
+                        <img src="/Images/arrow.png" class="mt-4" style="height:80px;width:80px;" />
                     </div>
                 </div>
             </div>
             <div class="col-4">
                 <div class="row">
                     <label class="form-label h5">2. Binary Representation</label>
+                    <label class="form-label h6">Bit Count = @(((string)ViewData["ClientSideBinaryRepresentation"]!).Replace(" ", "").Length)</label>
                     <div class="col-9">
-                        <textarea class="form-control" rows="5" readonly>Yolo</textarea>
+                        <textarea class="form-control" rows="5" readonly>@ViewData["ClientSideBinaryRepresentation"]</textarea>
                     </div>
                     <div class="col-3">
-                        <img src="/Images/arrow.png" class="mt-3" style="height:80px;width:80px;" />
+                        <img src="/Images/arrow.png" class="mt-4" style="height:80px;width:80px;" />
                     </div>
                 </div>
             </div>
             <div class="col-4">
                 <div class="row">
-                    <label class="form-label h5">3. Compressed Binary Representation</label>
+                    <label class="form-label h5">3. Compressed Binary</label>
+                    <label class="form-label h6">Bit Count = @(((string)ViewData["ClientSideCompressedBinaryRepresentation"]!).Replace(" ", "").Length)</label>
                     <div class="col-9">
-                        <textarea class="form-control" rows="5" readonly>Yolo</textarea>
+                        <textarea class="form-control" rows="5" readonly>@ViewData["ClientSideCompressedBinaryRepresentation"]</textarea>
                     </div>
                     <div class="col-3">
-                        <img src="/Images/arrow.png" class="mt-3" style="height:80px;width:80px;" />
+                        <img src="/Images/arrow.png" class="mt-4" style="height:80px;width:80px;" />
                     </div>
                 </div>
             </div>
             <div class="col-4 mt-4">
                 <div class="row">
-                    <label class="form-label h5">4. Binary Representation & Error Correction</label>
+                    <label class="form-label h5">4. Compressed Padded Binary</label>
+                    <label class="form-label h6">Bit Count = @(((string)ViewData["ClientSideCompressedPaddedBinaryRepresentation"]!).Replace(" ", "").Length)</label>
                     <div class="col-9">
-                        <textarea class="form-control" rows="5" readonly>Yolo</textarea>
+                        <textarea class="form-control" rows="5" readonly>@ViewData["ClientSideCompressedPaddedBinaryRepresentation"]</textarea>
                     </div>
                     <div class="col-3">
-                        <img src="/Images/arrow.png" class="mt-3" style="height:80px;width:80px;" />
+                        <img src="/Images/arrow.png" class="mt-4" style="height:80px;width:80px;" />
                     </div>
                 </div>
             </div>
-            <div class="col-4 mt-4 mb-2">
+            <div class="col-4 mt-4">
                 <div class="row">
+                    <label class="form-label h5">5. Padded Binary & Error Correction</label>
+                    <label class="form-label h6">Bit Count = @(((string)ViewData["ClientSideCompressedBinaryRepresentationWithErrorCorrecton"]!).Replace(" ", "").Length)</label>
                     <div class="col-9">
-                        <label class="form-label h5">5. Base64 Representation</label>
-                        <textarea class="form-control" rows="5" readonly>Yolo</textarea>
+                        <textarea id="binaryWithErrorCorrection" class="form-control" rows="5" readonly>@ViewData["ClientSideCompressedBinaryRepresentationWithErrorCorrecton"]</textarea>
                     </div>
+                    <div class="col-3">
+                        <img src="/Images/arrow.png" class="mt-4" style="height:80px;width:80px;" />
+                    </div>
+                </div>
+            </div>
+            <div class="col-4 mt-4">
+                <div class="row">
+                    @{
+                        string previousBinaryBitCount = (string)ViewData["ClientSideBinaryWithErrors"]! != "Not used for given configuration" ?
+                        ((string)ViewData["ClientSideBinaryWithErrors"]!).Replace(" ", "").Length.ToString() : "NaN";
+                    }
+                    <label class="form-label h5">6. Previous Binary With Errors</label>
+                    <label class="form-label h6">Bit Count = @previousBinaryBitCount | Error Count = <span id="errorCount"></span></label>
+                    <div class="col-9">
+                        <textarea id="binaryWithErrors" class="form-control" rows="5" readonly>@ViewData["ClientSideBinaryWithErrors"]</textarea>
+                    </div>
+                    <div class="col-3">
+                        <img src="/Images/arrow.png" class="mt-4" style="height:80px;width:80px;" />
+                    </div>
+                </div>
+            </div>
+            <div class="col-4 mt-4">
+                <div class="row">
+                    @{
+                        string clientSideBase64RepresentationBitCount = (string)ViewData["ClientSideBase64Representation"]! != "Not used for given configuration" ?
+                        ((string)ViewData["ClientSideBase64Representation"]!).Replace(" ", "").Length.ToString() : "NaN";
+                    }
+                    <label class="form-label h5">7. Base64 Representation</label>                    
+                    <label class="form-label h6">Bit Count = @clientSideBase64RepresentationBitCount</label>
+                    <div class="col-9">
+                        <textarea class="form-control" rows="5" readonly>@ViewData["ClientSideBase64Representation"]</textarea>
+                    </div>
+                    <div class="col-3">
+                        <img src="/Images/equals.png" class="mt-4" style="height:80px;width:80px;padding-right:5px;" />
+                    </div>
+                </div>
+            </div>
+            <div class="col-4 mt-4">
+                <div class="row">
+                    <label class="form-label h5">8. Base64 ASCII Representation</label>
+                    <label class="form-label h6">Same As 7(visual aid)</label>
+                    <div class="col-9">
+                        <textarea class="form-control" rows="5" readonly>@ViewData["ClientSideBase64InAscii"]</textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="col-4 mt-4">
+                <div class="row">
+                    <h4 class="text-center">Statistics</h4>
+                    <div>Entropy = @ViewData["Entropy"] </div>
+                    <div>Compression Rate = @ViewData["CompressionRate"]% </div>
+                    <div>Added Errors = <span id="statisticsErrorCount">@ViewData["ErrorsAdded"]</span></div>
+                    <div>Detected Errors = @ViewData["ErrorsDetected"]</div>
+                    <div>Retransmission = @ViewData["RetransmissionCount"]</div>
                 </div>
             </div>
         </div>
@@ -114,59 +182,86 @@
 </div>
 
 <div id="serverSideContainer" class="shadow pb-3 bg-white">
-    <div class="bg-primary mb-4 pb-1 pt-2 border border-dark border-2">
-        <h2 class="text-center">Server Side</h2>
+    <div class="bg-primary pb-1 pt-2 border border-dark border-2">
+        <div class="row">
+            <div class="col-4"></div>
+            <div class="col-4">
+                <h2 class="text-center">Server Side</h2>
+            </div>
+            <div class="col-4 text-end">
+                <button class="btn btn-lg" style="background-color:transparent"
+                        type="button" id="serverSideToggleButton" data-bs-toggle="collapse" data-bs-target="#serverSideDropDownSection"
+                        onclick="toggleChevron('serverSideSevron')">
+                    <i class="fas fa-chevron-up" id="serverSideSevron"></i>
+                </button>
+            </div>
+        </div>
     </div>
-    <div class="row px-3">
-        <div class="col-4">
-            <div class="row">
-                <label class="form-label h5">1. Base64 Representation</label>
-                <div class="col-9">
-                    <textarea class="form-control" rows="5" readonly>Yolo</textarea>
-                </div>
-                <div class="col-3">
-                    <img src="/Images/arrow.png" class="mt-3" style="height:80px;width:80px;"/>
-                </div>
-            </div>
-        </div>
-        <div class="col-4">
-            <div class="row">
-                <label class="form-label h5">2. Binary Representation & Error Correction</label>
-                <div class="col-9">
-                    <textarea class="form-control" rows="5" readonly>Yolo</textarea>
-                </div>
-                <div class="col-3">
-                    <img src="/Images/arrow.png" class="mt-3" style="height:80px;width:80px;" />
+    <div class="collapse show mt-4" id="serverSideDropDownSection">
+        <div class="row px-3">
+            <div class="col-4">
+                <div class="row">
+                    @{
+                        string serverSideBase64RepresentationBitCount = (string)ViewData["ServerSideBase64Representation"]! != "Not used for given configuration" ?
+                        ((string)ViewData["ServerSideBase64Representation"]!).Replace(" ", "").Length.ToString() : "NaN";
+                    }
+                    <label class="form-label h5">1. Base64 Representation</label>
+                    <label class="form-label h6">Bit Count = @serverSideBase64RepresentationBitCount</label>
+                    <div class="col-9">
+                        <textarea class="form-control" rows="5" readonly>@ViewData["ServerSideBase64Representation"]</textarea>
+                    </div>
+                    <div class="col-3">
+                        <img src="/Images/arrow.png" class="mt-4" style="height:80px;width:80px;" />
+                    </div>
                 </div>
             </div>
-        </div>
-        <div class="col-4">
-            <div class="row">
-                <label class="form-label h5">3. Compressed Binary Representation</label>
-                <div class="col-9">
-                    <textarea class="form-control" rows="5" readonly>Yolo</textarea>
-                </div>
-                <div class="col-3">
-                    <img src="/Images/arrow.png" class="mt-3" style="height:80px;width:80px;" />
-                </div>
-            </div>
-        </div>
-        <div class="col-4 mt-4">
-            <div class="row">
-                <label class="form-label h5">4. Binary Representation</label>
-                <div class="col-9">
-                    <textarea class="form-control" rows="5" readonly>Yolo</textarea>
-                </div>
-                <div class="col-3">
-                    <img src="/Images/arrow.png" class="mt-3" style="height:80px;width:80px;" />
+            <div class="col-4">
+                <div class="row">
+                    <label class="form-label h5">2. Binary & Error Correction</label>
+                    <label class="form-label h6">Bit Count = @(((string)ViewData["ServerSideCompressedBinaryRepresentationWithErrorCorrection"]!).Replace(" ", "").Length)</label>
+                    <div class="col-9">
+                        <textarea class="form-control" rows="5" readonly>@ViewData["ServerSideCompressedBinaryRepresentationWithErrorCorrection"]</textarea>
+                    </div>
+                    <div class="col-3">
+                        <img src="/Images/arrow.png" class="mt-4" style="height:80px;width:80px;" />
+                    </div>
                 </div>
             </div>
-        </div>
-        <div class="col-4 mt-4 mb-2">
-            <div class="row">
-                <div class="col-9">
+            <div class="col-4">
+                <div class="row">
+                    <label class="form-label h5">3. Compressed Binary</label>
+                    <label class="form-label h6">Bit Count = @(((string)ViewData["ServerSideCompressedBinaryRepresentation"]!).Replace(" ", "").Length)</label>
+                    <div class="col-9">
+                        <textarea class="form-control" rows="5" readonly>@ViewData["ServerSideCompressedBinaryRepresentation"]</textarea>
+                    </div>
+                    <div class="col-3">
+                        <img src="/Images/arrow.png" class="mt-4" style="height:80px;width:80px;" />
+                    </div>
+                </div>
+            </div>
+            <div class="col-4 mt-4">
+                <div class="row">
+                    <label class="form-label h5">4. Binary Representation</label>
+                    <label class="form-label h6">Bit Count = @(((string)ViewData["ServerSideBinaryRepresentation"]!).Replace(" ", "").Length)</label>
+                    <div class="col-9">
+                        <textarea class="form-control" rows="5" readonly>@ViewData["ServerSideBinaryRepresentation"]</textarea>
+                    </div>
+                    <div class="col-3">
+                        <img src="/Images/arrow.png" class="mt-4" style="height:80px;width:80px;" />
+                    </div>
+                </div>
+            </div>
+            <div class="col-4 mt-4">
+                <div class="row">
+                    @{
+                        string finalAsciiRepresantation = ((string)ViewData["ServerSideAsciiRepresentation"]!);
+                        int finalBitLength = finalAsciiRepresantation.Length != 0 ? finalAsciiRepresantation.Length * 8 + 8 : 0; //accounts for null character
+                    }
                     <label class="form-label h5">5. Ascii Representation</label>
-                    <textarea class="form-control" rows="5" readonly>Yolo</textarea>
+                    <label class="form-label h6">Bit Count = @finalBitLength</label>
+                    <div class="col-9">
+                        <textarea class="form-control" rows="5" readonly>@ViewData["ServerSideAsciiRepresentation"]</textarea>
+                    </div>
                 </div>
             </div>
         </div>
@@ -190,5 +285,34 @@
                 icon.classList.add('fa-chevron-down');
             }
         }
+
+        function updateHiddenInput() {
+            var textarea = document.getElementById("userInputTextArea");
+            var hiddenInput = document.getElementById("userInput");
+            hiddenInput.value = textarea.value;
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const binaryWithErrorCorrection = document.getElementById('binaryWithErrorCorrection').value;
+            const binaryWithErrors = document.getElementById('binaryWithErrors').value;
+
+            if (binaryWithErrors == "Not used for given configuration") {
+                document.getElementById('errorCount').textContent = "NaN";
+                return;
+            }
+
+            let errorCount = 0;
+            let statisticsErrorCount = parseInt(document.getElementById('statisticsErrorCount').textContent, 10) || 0;
+
+            for (let i = 0; i < binaryWithErrorCorrection.length; i++) {
+                if (binaryWithErrorCorrection[i] !== binaryWithErrors[i]) {
+                    errorCount++;
+                    statisticsErrorCount++;
+                }
+            }
+            document.getElementById('errorCount').textContent = errorCount;
+            document.getElementById('statisticsErrorCount').textContent = statisticsErrorCount;
+        });
+
     </script>
 }

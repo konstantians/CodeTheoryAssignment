@@ -13,28 +13,139 @@ public class CompressionAlgorithmsService : ICompressionAlgorithmsService
         public string? BinaryCharacter { get; set; }
         public double Probability { get; set; }
 
-        public Node()
-        {
-
-        }
+        public Node(){}
         public Node(string binaryCharacter, double probability)
         {
             BinaryCharacter = binaryCharacter;
             Probability = probability;
         }
     }
+
+    public (string, Dictionary<string, string>) ShannonFanoCompression(string inputBinaryString)
+    {
+        List<string> binaryCharacters = inputBinaryString.Split(" ").ToList();
+        List<string> binaryCharactersDeepCopy = new();
+        foreach (string character in binaryCharacters)
+            binaryCharactersDeepCopy.Add(character);
+
+        //calculate probabilities of each character
+        Dictionary<string, double> charactersProbabilitiesDictionary = CalculateBinaryCharactersProbabilitiesForShannonFanoCompression(binaryCharactersDeepCopy);
+
+        //this should build the tree
+        Node root = new Node("", 1);
+        BuildBinaryTreeRecursively(root, charactersProbabilitiesDictionary);
+
+        StringBuilder compressedBinaryString = new StringBuilder();
+        Dictionary<string, string> shannonCodes = new Dictionary<string, string>();
+
+        // This is the part of the algorithm that just builds the dictionary that is needed for the decompression
+        // BFS to traverse the tree to the correct node for each character
+        StringBuilder currentEncodedCharacter = new StringBuilder();
+        foreach (string currentCharacter in binaryCharacters)
+        {
+            Node traversingNode = root;
+            while (traversingNode.BinaryCharacter != currentCharacter)
+            {
+                if (traversingNode.LeftChild!.BinaryCharacter!.Contains(currentCharacter))
+                {
+                    traversingNode = traversingNode.LeftChild!;
+                    currentEncodedCharacter.Append("0");
+                }
+                else
+                {
+                    traversingNode = traversingNode.RightChild!;
+                    currentEncodedCharacter.Append("1");
+                }
+            }
+
+            compressedBinaryString.Append(currentEncodedCharacter.ToString());
+            if(!shannonCodes.TryGetValue(currentEncodedCharacter.ToString(), out _))
+                shannonCodes.Add(currentEncodedCharacter.ToString(), currentCharacter);
+            currentEncodedCharacter.Clear();
+        }
+
+        return (compressedBinaryString.ToString(), shannonCodes);
+    }
+    private void BuildBinaryTreeRecursively(Node node, Dictionary<string, double> charactersAndProbabilitiesDictionary)
+    {
+        List<string> leftSubList = new();
+        Dictionary<string, double> leftSubDictionary = new();
+        List<string> rightSubList = new();
+        Dictionary<string, double> rightSubDictionary = new();
+        double leftProbability = 0;
+        foreach (KeyValuePair<string, double> characterAndProbability in charactersAndProbabilitiesDictionary)
+        {
+            if (leftProbability + characterAndProbability.Value <= node.Probability / 2)
+            {
+                leftSubList.Add(characterAndProbability.Key);
+                leftProbability += characterAndProbability.Value;
+                leftSubDictionary.Add(characterAndProbability.Key, characterAndProbability.Value);
+            }
+            else
+            {
+                rightSubList.Add(characterAndProbability.Key);
+                rightSubDictionary.Add(characterAndProbability.Key, characterAndProbability.Value);
+            }
+        }
+
+        //if we have no reached a single character do this
+        if (leftSubList.Count >= 1)
+        {
+            node.LeftChild = new Node(string.Join(" ", leftSubList), leftProbability);
+            if(leftSubList.Count > 1)
+                BuildBinaryTreeRecursively(node.LeftChild, leftSubDictionary);
+        }
+
+        if (rightSubList.Count >= 1)
+        {
+            node.RightChild = new Node(string.Join(" ", rightSubList), 1 - leftProbability);
+            if (rightSubList.Count > 1)
+                BuildBinaryTreeRecursively(node.RightChild, rightSubDictionary);
+        }
+    }
+    private Dictionary<string, double> CalculateBinaryCharactersProbabilitiesForShannonFanoCompression(List<string> binaryCharacters)
+    {
+        Dictionary<string, double> charactersProbabilitiesDictionary = new();
+
+        //sort character and calculate probabilities
+        binaryCharacters.Sort(); //the reason why we sort is because we want the same characters to all be subsequent
+        binaryCharacters.Add("111111111");
+        string currentCharacter = binaryCharacters.First();
+        int currentCharacterCount = 0;
+        //just count how many same characters there are in a row and if the next character is different then just do the probability calcutation
+        //the 111.. that is added in the end is just for the last character to also work correctly. Maybe not the best way of doing that, but it works.
+        for (int i = 0; i < binaryCharacters.Count; i++)
+        {
+            if (currentCharacter != binaryCharacters[i])
+            {
+                double characterProbability = Math.Round((double)currentCharacterCount / (binaryCharacters.Count - 1), 5);
+
+                charactersProbabilitiesDictionary.Add(currentCharacter, characterProbability);
+                currentCharacterCount = 0;
+                currentCharacter = binaryCharacters[i];
+            }
+
+            currentCharacterCount++;
+        }
+        binaryCharacters.Remove("111111111");
+
+        return charactersProbabilitiesDictionary;
+    }
+
     public (string, Dictionary<string, string>) HuffmanCompression(string inputBinaryString)
     {
         List<string> binaryCharacters = inputBinaryString.Split(" ").ToList();
-        List<string> binaryCharacterDeepCopy = new();
+        List<string> binaryCharactersDeepCopy = new();
         foreach (string character in binaryCharacters)
-            binaryCharacterDeepCopy.Add(character);
+            binaryCharactersDeepCopy.Add(character);
 
-        PriorityQueue<string, double> charactersProbabilitiesPriorityQueue = CalculateBinaryCharactersProbabilities(binaryCharacterDeepCopy);
+        PriorityQueue<string, double> charactersProbabilitiesPriorityQueue = CalculateBinaryCharactersProbabilitiesForHuffmanCompression(binaryCharactersDeepCopy);
 
+        //this is the part of the algorithm that builds the binary tree from the bottom up as the huffman algorithm dictates
         List<Node> currentNodes = new List<Node>();
         while(charactersProbabilitiesPriorityQueue.Count > 1)
         {
+            //each array here contains the character in index 0 and in index 1 it contains the probabability of that character
             string[] firstCharacterAndProbability = charactersProbabilitiesPriorityQueue.Dequeue().Split(" ");
             string[] secondCharacterAndProbability = charactersProbabilitiesPriorityQueue.Dequeue().Split(" ");
             
@@ -76,10 +187,11 @@ public class CompressionAlgorithmsService : ICompressionAlgorithmsService
             charactersProbabilitiesPriorityQueue.Enqueue($"{newNode.BinaryCharacter} {newNode.Probability}", newNode.Probability);
         }
 
-        Node root = currentNodes.FirstOrDefault(node => node.Probability >= 0.98 && node.Probability <= 1.1)!;
+        Node root = currentNodes.FirstOrDefault(node => node.Probability >= 0.98 && node.Probability <= 1.1)!; //this just makes sure that there are no rounding errors
         StringBuilder compressedBinaryString = new StringBuilder();
         Dictionary<string, string> huffmanCodes = new Dictionary<string, string>();
 
+        // This is the part of the algorithm that just builds the dictionary that is needed for the decompression
         // BFS to traverse the tree to the correct node for each character
         foreach (string currentCharacter in binaryCharacters)
         {
@@ -104,32 +216,17 @@ public class CompressionAlgorithmsService : ICompressionAlgorithmsService
 
         return (compressedBinaryString.ToString(), huffmanCodes);
     }
-    public string HuffmanDecompression(Dictionary<string, string> huffmanCodes, string compressedBinaryString)
-    {
-        StringBuilder finalBinaryString = new StringBuilder();
-        StringBuilder currentCharacter = new StringBuilder();
-        foreach (char compressedBinaryCharacter in compressedBinaryString)
-        {
-            currentCharacter.Append(compressedBinaryCharacter);
-            huffmanCodes.TryGetValue(currentCharacter.ToString(), out string? originalCharacter);
-            if(originalCharacter is not null)
-            {
-                finalBinaryString.Append(originalCharacter + " ");
-                currentCharacter.Clear();
-            }
-        }
-
-        return finalBinaryString.ToString().Trim();
-    }
-    private PriorityQueue<string, double> CalculateBinaryCharactersProbabilities(List<string> binaryCharacters)
+    private PriorityQueue<string, double> CalculateBinaryCharactersProbabilitiesForHuffmanCompression(List<string> binaryCharacters)
     {
         PriorityQueue<string, double> charactersProbabilitiesPriorityQueue = new();
 
         //sort character and calculate probabilities
-        binaryCharacters.Sort();
+        binaryCharacters.Sort(); //the reason why we sort is because we want the same characters to all be subsequent
         binaryCharacters.Add("111111111");
         string currentCharacter = binaryCharacters.First();
         int currentCharacterCount = 0;
+        //just count how many same characters there are in a row and if the next character is different then just do the probability calcutation
+        //the 111.. that is added in the end is just for the last character to also work correctly. Maybe not the best way of doing that, but it works.
         for (int i = 0; i < binaryCharacters.Count; i++)
         {
             if (currentCharacter != binaryCharacters[i])
@@ -146,6 +243,23 @@ public class CompressionAlgorithmsService : ICompressionAlgorithmsService
         binaryCharacters.Remove("111111111");
 
         return charactersProbabilitiesPriorityQueue;
+    }
+    public string HuffmanOrShannonFanoDecompression(Dictionary<string, string> codes, string compressedBinaryString)
+    {
+        StringBuilder finalBinaryString = new StringBuilder();
+        StringBuilder currentCharacter = new StringBuilder();
+        foreach (char compressedBinaryCharacter in compressedBinaryString)
+        {
+            currentCharacter.Append(compressedBinaryCharacter);
+            codes.TryGetValue(currentCharacter.ToString(), out string? originalCharacter);
+            if (originalCharacter is not null)
+            {
+                finalBinaryString.Append(originalCharacter + " ");
+                currentCharacter.Clear();
+            }
+        }
+
+        return finalBinaryString.ToString().Trim();
     }
 
     public string LempelZiv78Compression(string inputBinaryString)
@@ -180,9 +294,6 @@ public class CompressionAlgorithmsService : ICompressionAlgorithmsService
 
         //Add the null currentCharacter in the end
         compressedBinaryString.Append("00000000");
-        /*int initialByteCount = binaryCharacters.Count;
-        double compressedByteCount = compressedBinaryString.Length / 8;
-        double compressionRatio = (initialByteCount - compressedByteCount) / initialByteCount * 100;*/
         return compressedBinaryString.ToString();
     }
     public string LempelZiv78Decompression(string compressedBinaryString)
@@ -196,26 +307,34 @@ public class CompressionAlgorithmsService : ICompressionAlgorithmsService
         while (compressedBinaryString.Count() != 0)
         {
             if (compressedBinaryString.StartsWith("0"))
-                encodedCharacterSize = 8;
+                //the ? part is useful to avoid potential exceptions that might happen if errors are added after compression to the binary
+                encodedCharacterSize = compressedBinaryString.Length >= 8 ? 8 : compressedBinaryString.Length; 
             else if (compressedBinaryString.StartsWith("1"))
-                encodedCharacterSize = 9;
+                encodedCharacterSize = compressedBinaryString.Length >= 9 ? 9 : compressedBinaryString.Length;
 
-            compressedBinaryStrings.Add(compressedBinaryString.Substring(0, encodedCharacterSize));
-            compressedBinaryString = compressedBinaryString.Remove(0, encodedCharacterSize);
+            compressedBinaryStrings.Add(compressedBinaryString.Substring(0, encodedCharacterSize)); //or maybe this one can be the one that throws the exception
+            compressedBinaryString = compressedBinaryString.Remove(0, encodedCharacterSize); //I think this might be the one that throws the exception
         }
 
+        //this is the part of the algorithm that builds the 
         for (int i = 0; i < compressedBinaryStrings.Count - 1; i++)
         {
+            //check if it is an encoded value(starts with 1) or if it is a not encoded value(starts with 0) for the currrent and the next character
             string firstValue = compressedBinaryStrings[i].StartsWith("0") ?
                   compressedBinaryStrings[i] : sequencesAndEncodings.GetValueOrDefault(compressedBinaryStrings[i])!;
             string secondValue = compressedBinaryStrings[i + 1].StartsWith("0") ?
                   compressedBinaryStrings[i + 1] : sequencesAndEncodings.GetValueOrDefault(compressedBinaryStrings[i + 1])!;
 
-            // Handle the potential edge case where secondValue is null
+            // can only happen if errors are added in binary in the last character
+            if (firstValue is null)
+                firstValue = "00101110"; //this is the ascii code for '.' a random character I picked for error.
+
+            // Handle the potential edge case where secondValue is null, can happen if errors are added after compression..
             if (secondValue is null)
                 secondValue = firstValue + " " + firstValue.Substring(0, 8);
 
             finalbinaryStringBuilder.Append(firstValue + " ");
+            // the maximum characters, which can be in the dictionary for this implementation are 256 since we start from 256
             if (encoding < 512)
                 sequencesAndEncodings.Add(Convert.ToString(encoding, 2), firstValue + " " + secondValue.Substring(0, 8));
 
@@ -375,7 +494,6 @@ public class CompressionAlgorithmsService : ICompressionAlgorithmsService
 
         return binaryOutput.ToString();
     }
-
     private decimal BinaryFractionToDecimal(string binaryFraction)
     {
         decimal decimalValue = 0.0m;
@@ -391,7 +509,6 @@ public class CompressionAlgorithmsService : ICompressionAlgorithmsService
 
         return decimalValue;
     }
-
     internal struct CharProbAndInterval
     {
         public decimal Probability;

@@ -7,6 +7,7 @@ namespace CodeTheoryAssignment.MVC
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+            IConfiguration configuration = builder.Configuration; 
 
             // Add services to the container.
             builder.Services.AddControllersWithViews();
@@ -15,6 +16,12 @@ namespace CodeTheoryAssignment.MVC
             builder.Services.AddSingleton<IErrorCorrectingAlgorithmsService, ErrorCorrectingAlgorithmsService>();
             builder.Services.AddSingleton<IErrorInsertionService, ErrorInsertionService>();
             builder.Services.AddSingleton<IStatisticsService, StatisticsService>();
+
+            // Add HTTP client for API calls.
+            builder.Services.AddHttpClient("ApiClient", client =>
+            {
+                client.BaseAddress = new Uri(configuration["GatewayAPIOrigin"]!);
+            });
 
             var app = builder.Build();
 

@@ -1,8 +1,7 @@
-﻿namespace CodeTheoryAssignment.Library
+﻿namespace CodeTheoryAssignment.Library;
+
+public interface IErrorInsertionService
 {
-    public interface IErrorInsertionService
-    {
-        string AddErrorsBasedOnProbability(string binarySequence, double probability);
-        string AddOneErrorEvery7Bits(string binarySequence);
-    }
+    (int, string) AddErrorsBasedOnProbability(string binarySequence, double probability);
+    string AddOneErrorEvery7Bits(string binarySequence);
 }

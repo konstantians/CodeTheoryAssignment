@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace CodeTheoryAssignment.API.Models;
+namespace CodeTheoryAssignment.API.Models.RequestModels;
 
 public class LempelZiv78CompressionAndHamming74RequestModel
 {

@@ -1,7 +1,7 @@
-﻿namespace CodeTheoryAssignment.Library
+﻿namespace CodeTheoryAssignment.Library;
+
+public interface IStatisticsService
 {
-    public interface IStatisticsService
-    {
-        double CalculateCompressionRate(int uncompressedBitCount, int compressedBitCount);
-    }
+    double CalculateCompressionRate(int uncompressedBitCount, int compressedBitCount);
+    double CalculateEntropy(string text);
 }

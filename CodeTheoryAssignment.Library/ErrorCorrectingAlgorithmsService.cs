@@ -1,23 +1,22 @@
-﻿using System.Linq;
-using System.Text;
+﻿using System.Text;
 
 namespace CodeTheoryAssignment.Library;
 
 public class ErrorCorrectingAlgorithmsService : IErrorCorrectingAlgorithmsService
 {
-    public string RetransmissionMechanism(string initialBinarySequence, List<int> byteErrorPositions)
+    public string RetransmissionMechanism(string binarySequence, List<int> correspondingPositionOfCharacter)
     {
         List<string> binaryStrings = new List<string>();
         StringBuilder byteStringBuilder = new StringBuilder();
         StringBuilder BinarySequenceThatNeedsToBeRetransmitted = new StringBuilder();
-        for (int i = 0; i < initialBinarySequence.Length; i++)
+        for (int i = 0; i < binarySequence.Length; i++)
         {
-            byteStringBuilder.Append(initialBinarySequence[i]);
+            byteStringBuilder.Append(binarySequence[i]);
             if ((i + 1) % 8 == 0)
             {
                 //Add the byte padded by k = n - 1 bits, where n is the errorCount of bits of the generator polynomial
                 binaryStrings.Add(byteStringBuilder.ToString());
-                if (!byteErrorPositions.Contains(i))
+                if (!correspondingPositionOfCharacter.Contains(i))
                     BinarySequenceThatNeedsToBeRetransmitted.Append(byteStringBuilder.ToString());
 
                 byteStringBuilder.Clear();
@@ -54,6 +53,7 @@ public class ErrorCorrectingAlgorithmsService : IErrorCorrectingAlgorithmsServic
 
         return crcEncodedSequence.ToString();
     }
+    
     public (string, List<int>) CyclicRedundancyCodeDecoding(string crcEncodedSequence)
     {
 
@@ -72,7 +72,6 @@ public class ErrorCorrectingAlgorithmsService : IErrorCorrectingAlgorithmsServic
             }
         }
 
-        //TODO check if this is correct and fix the errorCount + the error position
         List<int> errorBytePositions = new List<int>();
         StringBuilder binaryStringSequence = new StringBuilder();
         int index = 0;
@@ -92,12 +91,12 @@ public class ErrorCorrectingAlgorithmsService : IErrorCorrectingAlgorithmsServic
     private string PolynomialDivisionOperation(string dividend, string generatorPolynomial)
     {
         string binaryStringCopy = dividend;
-        string startingPoint = binaryStringCopy.Substring(0, 9);
-        binaryStringCopy = binaryStringCopy.Remove(0, 9);
+        string startingPoint = binaryStringCopy.Substring(0, 9); //starting point has the first 9 bits out of the total 16 bits
+        binaryStringCopy = binaryStringCopy.Remove(0, 9); //binaryStringcopy has the last 7 bits out of the total 16 bits
 
         while (binaryStringCopy.Length > 0)
         {
-            //Do the division if what is left does not start with 0, else skip the division
+            //Do the division if the starting bit of startingPoint, which is what is left, starts with 1 with else skip the division
             if (!startingPoint.StartsWith("0"))
                 startingPoint = XorBinaryStrings(startingPoint, generatorPolynomial);
 
@@ -114,6 +113,7 @@ public class ErrorCorrectingAlgorithmsService : IErrorCorrectingAlgorithmsServic
     }
     private string XorBinaryStrings(string binaryString1, string binaryString2)
     {
+        //for the xor to work they must have the same length
         if(binaryString1.Length != binaryString2.Length)
             throw new Exception("binary strings do not have the same length");
 
@@ -156,7 +156,7 @@ public class ErrorCorrectingAlgorithmsService : IErrorCorrectingAlgorithmsServic
         return hammingEncodedBinaryString.ToString();
     }
 
-    public string HammingCode74Decoding(string hammingCodeEncodedSequence)
+    public (string, int) HammingCode74Decoding(string hammingCodeEncodedSequence)
     {
         List<string> hammingCodeEncodedCharacters = new List<string>();
         StringBuilder hammingCodeEncodedCharacter = new StringBuilder();
@@ -171,6 +171,7 @@ public class ErrorCorrectingAlgorithmsService : IErrorCorrectingAlgorithmsServic
         }
 
         StringBuilder binaryString = new StringBuilder();
+        int detectedErrors = 0;
         foreach (string encodedCharacter in hammingCodeEncodedCharacters)
         {
             char correctParityBit0;
@@ -215,8 +216,10 @@ public class ErrorCorrectingAlgorithmsService : IErrorCorrectingAlgorithmsServic
 
             binaryString.Append(correctedEncodedCharacter[0].ToString() + correctedEncodedCharacter[1].ToString() + 
                 correctedEncodedCharacter[2].ToString() + correctedEncodedCharacter[4].ToString());
+
+            detectedErrors++;
         }
 
-        return binaryString.ToString();
+        return (binaryString.ToString(), detectedErrors);
     }
 }

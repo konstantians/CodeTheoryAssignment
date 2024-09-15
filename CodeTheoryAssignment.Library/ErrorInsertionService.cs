@@ -41,20 +41,24 @@ public class ErrorInsertionService : IErrorInsertionService
         return errorBinarySequence.ToString();
     }
 
-    public string AddErrorsBasedOnProbability(string binarySequence, double probability)
+    public (int, string) AddErrorsBasedOnProbability(string binarySequence, double probability)
     {
-        Random random = new Random(42);
+        Random random = new Random();
 
         StringBuilder errorBinarySequence = new StringBuilder();
+        int errorCount = 0;
         foreach (char bit in binarySequence)
         {
             double randomDouble = random.NextDouble();
             char opossiteValueOfBit = bit == '0' ? '1' : '0';
             char newBitValue = randomDouble <= probability ? opossiteValueOfBit : bit;
 
+            if(opossiteValueOfBit == newBitValue)
+                errorCount++;
+
             errorBinarySequence.Append(newBitValue);
         }
 
-        return errorBinarySequence.ToString();
+        return (errorCount, errorBinarySequence.ToString());
     }
 }

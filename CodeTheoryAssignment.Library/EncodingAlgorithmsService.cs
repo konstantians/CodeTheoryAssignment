@@ -1,16 +1,9 @@
-﻿using System.Security.Cryptography.X509Certificates;
-using System.Text;
+﻿using System.Text;
 
 namespace CodeTheoryAssignment.Library;
 
 public class EncodingAlgorithmsService : IEncodingAlgorithmsService
 {
-    public EncodingAlgorithmsService()
-    {
-        Base64ToASCIICharTable = ASCIICharToBase64CharTable.ToDictionary(kv => kv.Value, kv => kv.Key);
-        BinaryToAsciiTable = AsciiTable.ToDictionary(kv => kv.Value, kv => kv.Key);
-    }
-
     public string ConvertASCIIToBinaryAlgorithm(string inputString, bool addNullCharacterAddEndOfSequence = true)
     {
         StringBuilder binaryString = new StringBuilder();
@@ -63,20 +56,21 @@ public class EncodingAlgorithmsService : IEncodingAlgorithmsService
         int currentTotalBits = newPaddedBinarySequence.Length + hammingCodeExtraBitsThatWillBeAdded;
         
         //add 7 bits each time(3 will be added automatically)
-        int counter = 0;
-        int multiplier = 0;
-        while ((currentTotalBits + counter + (multiplier * 3)) % 8 != 0)
+        //from here on the bits we have calculated need to be divisible by 8 for base64 encoding
+        //to work with hamming we need to add 4 bits each time, but also take into account that hamming adds 3 on its own.
+        int ourAddedBitsForDivisibilityBy8 = 0;
+        int hammingAddedBits = 0;
+        while ((currentTotalBits + ourAddedBitsForDivisibilityBy8 + hammingAddedBits) % 8 != 0)
         {
-            counter += 4;
-            multiplier++;
+            hammingAddedBits += 3;
+            ourAddedBitsForDivisibilityBy8 += 4;
         }
 
-        //int totalBits = currentTotalBits + counter;
-        int totalBits = newPaddedBinarySequence.Length + counter;
+        int totalBits = newPaddedBinarySequence.Length + ourAddedBitsForDivisibilityBy8;
         for (int i = newPaddedBinarySequence.Length; i < totalBits; i++)
             newPaddedBinarySequence.Append(random.Next(0, 2));
 
-        int totalAddedBits = paddingSymbolsCount + counter;
+        int totalAddedBits = paddingSymbolsCount + ourAddedBitsForDivisibilityBy8;
         string totalAddedBitsInBinary = Convert.ToString(totalAddedBits, 2);
         while (totalAddedBitsInBinary.Length != 8)
             totalAddedBitsInBinary = "0" + totalAddedBitsInBinary; 
@@ -90,6 +84,8 @@ public class EncodingAlgorithmsService : IEncodingAlgorithmsService
     {
         string paddingLengthString = paddedBinarySequence.Substring(0, 8);
         int paddingLength = Convert.ToInt32(paddingLengthString, 2);
+        if (paddingLength > paddedBinarySequence.Length) //this can only happen if errors are added in after padding was added
+            paddingLength = paddedBinarySequence.Length % 8;
 
         string binarySequenceWithoutPadding = paddedBinarySequence.Remove(paddedBinarySequence.Length - paddingLength, paddingLength);
         string binarySequence = binarySequenceWithoutPadding.Remove(0, 8);
@@ -102,11 +98,10 @@ public class EncodingAlgorithmsService : IEncodingAlgorithmsService
         Random random = new Random(42);
 
         int paddingSymbolsCount = 8 - (binarySequence.Count() % 8) != 8 ? 8 - (binarySequence.Count() % 8) : 0;
+        string paddingSymbolsCountBinary = Convert.ToString(paddingSymbolsCount, 2).PadLeft(8, '0');
 
-        string paddingLength = ConvertASCIIToBinaryAlgorithm(paddingSymbolsCount.ToString(), false);
-        
         StringBuilder newPaddedBinarySequence = new StringBuilder();
-        newPaddedBinarySequence.Append(paddingLength);
+        newPaddedBinarySequence.Append(paddingSymbolsCountBinary);
         newPaddedBinarySequence.Append(binarySequence);
         for (int i = 0; i < paddingSymbolsCount; i++) 
             newPaddedBinarySequence.Append(random.Next(0, 2));
@@ -117,7 +112,9 @@ public class EncodingAlgorithmsService : IEncodingAlgorithmsService
     public string RemovePaddingFromBinarySequence(string paddedBinarySequence)
     {
         string paddingLengthString = paddedBinarySequence.Substring(0, 8);
-        int paddingLength = Int32.Parse(ConvertBinaryToASCIIAlgorithm(paddingLengthString));
+        int paddingLength = Convert.ToInt32(paddingLengthString, 2);
+        if(paddingLength > paddedBinarySequence.Length) //this can only happen if errors are added in after padding was added
+            paddingLength = paddedBinarySequence.Length % 8;
 
         string binarySequenceWithoutPadding = paddedBinarySequence.Remove(paddedBinarySequence.Length - paddingLength, paddingLength);
         string binarySequence = binarySequenceWithoutPadding.Remove(0, 8); 
@@ -154,11 +151,12 @@ public class EncodingAlgorithmsService : IEncodingAlgorithmsService
         }
 
         string base64String = base64StringBuilder.ToString();
-        //In the end the bytes need to be divisible by 4
-        int remainder = base64String.Count() / 8 % 4;
+        //In the end the bytes need to be divisible by 24(4 bytes). 4 characters in base64 are 3 characters in ASCII
+        int base64StringBytes = base64String.Count() / 8;
+        int neededBytesForDivisibleWith4 = (4 - (base64StringBytes % 4)) % 4;
 
-        //if not add "="/00111101 for padding
-        for (int i = 0; i < remainder; i++)
+        //if not add "=", which in binary is 00111101, for padding
+        for (int i = 0; i < neededBytesForDivisibleWith4; i++)
             base64String += "00111101";
 
         return base64String;
@@ -190,7 +188,30 @@ public class EncodingAlgorithmsService : IEncodingAlgorithmsService
         return binarySequence;
     }
 
-    internal Dictionary<string, string> ASCIICharToBase64CharTable { get; set; } = new Dictionary<string, string>(){
+    public string SplitBinarySequenceIntoBytes(string binarySequence)
+    {
+        StringBuilder byteBuilder = new StringBuilder();
+        StringBuilder finalOutputBuilder = new StringBuilder();
+        for(int i = 0; i < binarySequence.Length;i++) 
+        {
+            byteBuilder.Append(binarySequence[i]);
+            if((i + 1) % 8 == 0)
+            {
+                finalOutputBuilder.Append(byteBuilder.ToString());
+                finalOutputBuilder.Append(' ');
+                byteBuilder.Clear();
+            }
+        }
+
+        if (byteBuilder.Length > 0)
+            finalOutputBuilder.Append(byteBuilder.ToString());
+        else
+            finalOutputBuilder.Remove(finalOutputBuilder.Length - 1, 1);
+
+        return finalOutputBuilder.ToString();
+    }
+
+    internal static Dictionary<string, string> ASCIICharToBase64CharTable { get; set; } = new Dictionary<string, string>(){
         {"01000001", "000000"},{"01000010", "000001"},{"01000011", "000010"},{"01000100", "000011"},
         {"01000101", "000100"},{"01000110", "000101"},{"01000111", "000110"},{"01001000", "000111"},
         {"01001001", "001000"},{"01001010", "001001"},{"01001011", "001010"},{"01001100", "001011"},
@@ -209,9 +230,9 @@ public class EncodingAlgorithmsService : IEncodingAlgorithmsService
         {"00111000", "111100"},{"00111001", "111101"},{"00101011", "111110"},{"00101111", "111111"}  //last 2 are + and /
     };
 
-    internal Dictionary<string, string> Base64ToASCIICharTable { get; set; }
+    internal static Dictionary<string, string> Base64ToASCIICharTable { get; set; } = ASCIICharToBase64CharTable.ToDictionary(kv => kv.Value, kv => kv.Key);
 
-    internal Dictionary<char, string> AsciiTable { get; set; } = new Dictionary<char, string>(){
+    internal static Dictionary<char, string> AsciiTable { get; set; } = new Dictionary<char, string>(){
         {'\0', "00000000"},
         {' ', "00100000"},{'!', "00100001"},{'"', "00100010"},{'#', "00100011"},
         {'$', "00100100"},{'%', "00100101"},{'&', "00100110"},{'\'', "00100111"},
@@ -239,5 +260,5 @@ public class EncodingAlgorithmsService : IEncodingAlgorithmsService
         {'|', "01111100"},{'}', "01111101"},{'~', "01111110"}
     };
 
-    internal Dictionary<string, char> BinaryToAsciiTable { get; set; }
+    internal static Dictionary<string, char> BinaryToAsciiTable { get; set; } = AsciiTable.ToDictionary(kv => kv.Value, kv => kv.Key);
 }

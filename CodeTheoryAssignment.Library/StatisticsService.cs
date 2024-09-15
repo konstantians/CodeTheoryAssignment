@@ -6,10 +6,29 @@ public class StatisticsService : IStatisticsService
     {
         double uncompressedByteCount = uncompressedBitCount / 8;
         double compressedByteCount = compressedBitCount / 8;
-        return (uncompressedByteCount - compressedByteCount) / uncompressedByteCount * 100;
+        return Math.Round((double)(uncompressedByteCount - compressedByteCount) / uncompressedByteCount * 100, 2);
     }
 
-    //TODO add entropy calculation
+    public double CalculateEntropy(string text)
+    {
+        var frequencyDictictionary = new Dictionary<char, int>();
 
-    //TODO maybe add an error calculation here. Think about this
+        // count frequencies for each character
+        foreach (char character in text)
+        {
+            if (frequencyDictictionary.ContainsKey(character))
+                frequencyDictictionary[character]++;
+            else
+                frequencyDictictionary[character] = 1;
+        }
+
+        double entropy = 0.0;
+        foreach (var characterAndProbability in frequencyDictictionary)
+        {
+            double probability = characterAndProbability.Value / (double)text.Length;
+            entropy -= probability * Math.Log2(probability);
+        }
+
+        return Math.Round(entropy, 2);
+    }
 }
