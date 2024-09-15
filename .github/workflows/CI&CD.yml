@@ -1,0 +1,116 @@
+name: CI&CD
+
+on:
+    push:
+        branches: [ "main" ]
+    workflow_dispatch:
+
+jobs:
+    buildMVC:
+        runs-on: windows-latest
+
+        steps:
+            - uses: actions/checkout@v4
+            - name: Setup .NET
+              uses: actions/setup-dotnet@v4
+              with:
+                dotnet-version: 8.0.x
+   
+            - name: Restore library module dependencies
+              run: dotnet restore CodeTheoryAssignment.Library/CodeTheoryAssignment.Library.csproj
+            - name: Restore mvc module dependencies
+              run: dotnet restore CodeTheoryAssignment.MVC/CodeTheoryAssignment.MVC.csproj
+    
+            - name: Build library module
+              run: dotnet build CodeTheoryAssignment.Library/CodeTheoryAssignment.Library.csproj --configuration Release --no-restore 
+            - name: Build mvc module
+              run: dotnet build CodeTheoryAssignment.MVC/CodeTheoryAssignment.MVC.csproj --configuration Release --no-restore 
+
+            - name: Publish library module
+              run: dotnet publish CodeTheoryAssignment.Library/CodeTheoryAssignment.Library.csproj --configuration Release --output "${{ env.DOTNET_ROOT }}\\myapp"
+            - name: Publish mvc module
+              run: dotnet publish CodeTheoryAssignment.MVC/CodeTheoryAssignment.MVC.csproj --configuration Release --output "${{ env.DOTNET_ROOT }}\\myapp"            
+
+            - name: Upload artifact for deployment job
+              uses: actions/upload-artifact@v4
+              with:
+                name: .net-app-mvc
+                path: "${{ env.DOTNET_ROOT }}\\myapp"
+    
+    buildAPI:
+        runs-on: windows-latest
+
+        steps:
+            - uses: actions/checkout@v4
+            - name: Setup .NET
+              uses: actions/setup-dotnet@v4
+              with:
+                dotnet-version: 8.0.x
+   
+            - name: Restore library module dependencies
+              run: dotnet restore CodeTheoryAssignment.Library/CodeTheoryAssignment.Library.csproj
+            - name: Restore api module dependencies
+              run: dotnet restore CodeTheoryAssignment.API/CodeTheoryAssignment.API.csproj
+    
+            - name: Build library module
+              run: dotnet build CodeTheoryAssignment.Library/CodeTheoryAssignment.Library.csproj --configuration Release --no-restore 
+            - name: Build api module
+              run: dotnet build CodeTheoryAssignment.API/CodeTheoryAssignment.API.csproj --configuration Release --no-restore 
+
+            - name: Publish library module
+              run: dotnet publish CodeTheoryAssignment.Library/CodeTheoryAssignment.Library.csproj --configuration Release --output "${{ env.DOTNET_ROOT }}\\myapp"
+            - name: Publish api module
+              run: dotnet publish CodeTheoryAssignment.API/CodeTheoryAssignment.API.csproj --configuration Release --output "${{ env.DOTNET_ROOT }}\\myapp"            
+
+            - name: Upload artifact for deployment job
+              uses: actions/upload-artifact@v4
+              with:
+                name: .net-app-api
+                path: "${{ env.DOTNET_ROOT }}\\myapp"
+    
+
+
+    deployMVC:
+        runs-on: windows-latest
+        needs: buildMVC
+        environment:
+            name: 'production'
+            url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
+    
+        steps:
+            - name: Download artifact from build job
+              uses: actions/download-artifact@v4
+              with:
+                name: .net-app-mvc
+      
+            - name: Deploy to Azure Web App
+              id: deploy-to-webapp
+              uses: azure/webapps-deploy@v3
+              with:
+                app-name: 'codeTheoryAssignment'
+                slot-name: 'production'
+                package: .
+                publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_7E1C32CA684048C4988FFB8661FB8FB5 }}
+
+
+    deployAPI:
+        runs-on: windows-latest
+        needs: buildAPI
+        environment:
+            name: 'production'
+            url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
+    
+        steps:
+            - name: Download artifact from build job
+              uses: actions/download-artifact@v4
+              with:
+                name: .net-app-api
+      
+            - name: Deploy to Azure Web App
+              id: deploy-to-webapp
+              uses: azure/webapps-deploy@v3
+              with:
+                app-name: 'codeTheoryAssignmentApi'
+                slot-name: 'production'
+                package: .
+                publish-profile: ${{ secrets.AzureAppService_PublishProfile_725C196AF31148EC9B2A13CE3757986D }}
